@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import vtk
-import pandas as pd
 
 def main():
     colors = vtk.vtkNamedColors()
