@@ -2,34 +2,35 @@
 # -*- coding: utf-8 -*-
 
 import vtk
+import os, sys
+from ReadData import Mesh
 
 def main():
+    foldername="sample"
+    mesh=Mesh(GetPath(foldername))
+
     colors = vtk.vtkNamedColors()
 
-    # create polyhedron (cube)
-    # The point Ids are: [0, 1, 2, 3, 4, 5, 6, 7]
-
+    # create polyhedron (voronoi mesh)
     points = vtk.vtkPoints()
-    points.InsertNextPoint(-1.0, -1.0, -1.0)
-    points.InsertNextPoint(1.0, -1.0, -1.0)
-    points.InsertNextPoint(1.0, 1.0, -1.0)
-    points.InsertNextPoint(-1.0, 1.0, -1.0)
-    points.InsertNextPoint(-1.0, -1.0, 1.0)
-    points.InsertNextPoint(1.0, -1.0, 1.0)
-    points.InsertNextPoint(1.0, 1.0, 1.0)
-    points.InsertNextPoint(-1.0, 1.0, 1.0)
 
-    # These are the point ids corresponding to each face.
-    faces = [[0, 3, 2, 1], [0, 4, 7, 3], [4, 5, 6, 7], [5, 1, 2, 6], [0, 1, 5, 4], [2, 3, 7, 6]]
-    faceId = vtk.vtkIdList()
-    faceId.InsertNextId(6)  # Six faces make up the cell.
-    for face in faces:
-        faceId.InsertNextId(len(face))  # The number of points in the face.
-        [faceId.InsertNextId(i) for i in face]
+    for i in range(mesh.num_of_node):
+        points.InsertNextPoint(mesh.node.cod[i]) #codは0startにしているので0-num_of_node-1でOK
 
     ugrid = vtk.vtkUnstructuredGrid()
     ugrid.SetPoints(points)
-    ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
+
+    for i in range(mesh.num_of_elem):
+        #todo: nodeID, ifaceをそもそも-1しておいていいかも(ReadData.pyで)
+        faces=[ [nodeID-1 for nodeID in mesh.face.nodeID[iface-1]] for iface in mesh.elem.faceID[i] ] #nodeID,ifaceは1start(fortranのまま)なので修正
+        faceId = vtk.vtkIdList()
+        faceId.InsertNextId(len(mesh.elem.faceID[i]))
+        
+        for face in faces:
+            faceId.InsertNextId(len(face))  # The number of points in the face.
+            [faceId.InsertNextId(i) for i in face]
+
+        ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
 
     # Here we write out the cube.
     writer = vtk.vtkXMLUnstructuredGridWriter()
@@ -37,7 +38,7 @@ def main():
         writer.SetInput(ugrid)
     else:
         writer.SetInputData(ugrid)
-    writer.SetFileName("polyhedron.vtu")
+    writer.SetFileName(foldername+".vtu")
     writer.SetDataModeToAscii()
     writer.Update()
 
@@ -69,6 +70,10 @@ def main():
     renderWindow.Render()
     renderWindowInteractor.Start()
 
+def GetPath(foldername="sample"):
+    name=os.path.dirname(os.path.abspath(__file__))
+    path=os.path.normpath(os.path.join(name,"../",foldername))
+    return path
 
 if __name__ == '__main__':
     main()
