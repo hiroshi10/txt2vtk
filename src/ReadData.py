@@ -36,31 +36,34 @@ class Mesh:
             f.readline()    #empty line
             self.num_of_node,self.num_of_face=[int(item) for item in f.readline().split()[:2]]
             
-            nodes=Node(self.num_of_node)
+            self.node=Node(self.num_of_node)
             for _ in range(self.num_of_node):   #"_": 使わない数字
                 line=f.readline().split()
                 cod=[float(item) for item in line[1:]]
-                nodes.InsertNode(int(line[0]),cod) #id: int(line[0])
+                self.node.InsertNode(int(line[0]),cod) #id: int(line[0])
 
             f.readline()    #empty line
             
-            face=Surface(self.num_of_face)
+            self.face=Surface(self.num_of_face)
             for _ in range(self.num_of_face):
                 line=f.readline().split()
                 ids=[int(item) for item in line[5:]]
-                face.InsertFace(int(line[3]),ids)   #facetype: int(line[3])
+                self.face.InsertFace(int(line[3]),ids)   #facetype: int(line[3])
         
         with open(os.path.join(path,"ELEMENT.INDAT"),"r") as f:
             f.readline()    #empty line
             self.num_of_elem=int(f.readline().split()[0])
 
-            elems=Elem(self.num_of_elem)
+            self.elem=Elem(self.num_of_elem)
             for _ in range(self.num_of_elem):
                 line=f.readline().split()
                 faceID=[int(item) for item in line[6:]]
-                elems.InsertElem(int(line[1]),faceID)    #matID: int(line[1])
+                self.elem.InsertElem(int(line[1]),faceID)    #matID: int(line[1])
 
     #def Defrom(self):
+    #def InputVTK(self):
+
+    
 
 def main():
     name=os.path.dirname(os.path.abspath(__file__))
