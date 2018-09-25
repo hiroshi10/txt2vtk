@@ -39,7 +39,7 @@ class Mesh:
             self.node=Node(self.num_of_node)
             for _ in range(self.num_of_node):   #"_": 使わない数字
                 line=f.readline().split()
-                cod=[float(item) for item in line[1:]]
+                cod=[np.float64(item) for item in line[1:]]
                 self.node.InsertNode(int(line[0]),cod) #id: int(line[0])
 
             f.readline()    #empty line

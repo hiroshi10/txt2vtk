@@ -4,6 +4,7 @@
 import vtk
 import os, sys
 from ReadData import Mesh
+import numpy as np
 
 def main():
     foldername="sample"
@@ -31,6 +32,12 @@ def main():
             [faceId.InsertNextId(i) for i in face]
 
         ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
+    
+    #Test
+    scalars=vtk.vtkFloatArray()
+    for i in range(mesh.num_of_elem):
+        scalars.InsertNextValue(i)
+    ugrid.GetCellData().SetScalars(scalars)
 
     # Here we write out the cube.
     writer = vtk.vtkXMLUnstructuredGridWriter()
