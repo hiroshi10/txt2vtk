@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 import os,sys
+import glob
 
 class Elem:
     def __init__(self,num_of_elem):
@@ -39,7 +40,7 @@ class Mesh:
             self.node=Node(self.num_of_node)
             for _ in range(self.num_of_node):   #"_": 使わない数字
                 line=f.readline().split()
-                cod=[np.float64(item) for item in line[1:]]
+                cod=[float(item) for item in line[1:]]
                 self.node.InsertNode(int(line[0]),cod) #id: int(line[0])
 
             f.readline()    #empty line
@@ -63,7 +64,21 @@ class Mesh:
     #def Defrom(self):
     #def InputVTK(self):
 
-    
+    class Stress:
+        def __init__(self,fullpath,nelm,types):
+            self.path=fullpath
+            self.num_of_elem=nelm
+            sgm_dict={"min":1,"max":2,"x":3,"y":4,"z":5}
+            self.type=[sgm_dict[key.lower()] for key in types]
+
+        def GetStress(self):
+            num_lines=sum(1 for line in open(self.path))-1
+            if num_lines != self.num_of_elem:
+                print("InputError: Check the consistent between Element.INDAT & {}".format(self.path))
+                return
+
+            self.sgms=np.loadtxt(self.path,delimiter="\t",skiprows=1,usecols=self.type)
+
 
 def main():
     name=os.path.dirname(os.path.abspath(__file__))
