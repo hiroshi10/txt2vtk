@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import vtk
+from vtk.util import numpy_support as nps
 import os, sys
 from ReadData import Mesh
 import numpy as np
+import glob
 
 def main():
     foldername="sample"
@@ -33,21 +35,25 @@ def main():
 
         ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
     
-    #Test
-    scalars=vtk.vtkFloatArray()
-    for i in range(mesh.num_of_elem):
-        scalars.InsertNextValue(i)
-    ugrid.GetCellData().SetScalars(scalars)
+    #CellDataの入力
+    sgm_type=("min","max","Y")  #出力したい応力を入力する
+    mesh.GetSgmData(sgm_type)
 
-    # Here we write out the cube.
-    writer = vtk.vtkXMLUnstructuredGridWriter()
-    if vtk.VTK_MAJOR_VERSION <= 5:
-        writer.SetInput(ugrid)
+    #MatIDの入力
+    matID=nps.numpy_to_vtk(num_array=np.array(mesh.elem.matID),deep=True,array_type=vtk.VTK_INT)
+    matID.SetName("matID")
+    ugrid.GetCellData().AddArray(matID)
+
+    if mesh.sgm_paths:  #pathがあるとき(空のリストでないとき)
+        for idx,sgm in enumerate(mesh.sgm_steps):
+            for s_type in range(sgm.shape[1]): #列(SgmType)の分だけloop回す
+                scalar=nps.numpy_to_vtk(num_array=sgm[:,s_type],deep=True,array_type=vtk.VTK_FLOAT)
+                scalar.SetName(sgm_type[s_type])
+                ugrid.GetCellData().AddArray(scalar)    #SetScalarだと過去のデータを削除してしまうので注意
+            WriteVtkFile(os.path.basename(mesh.sgm_paths[idx]).split(".")[0],ugrid)
+            DelVtkArray(ugrid,sgm_type)
     else:
-        writer.SetInputData(ugrid)
-    writer.SetFileName(foldername+".vtu")
-    writer.SetDataModeToAscii()
-    writer.Update()
+        WriteVtkFile(foldername,ugrid)
 
     # Create a mapper and actor
     mapper = vtk.vtkDataSetMapper()
@@ -59,7 +65,7 @@ def main():
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     actor.GetProperty().SetColor(
-        colors.GetColor3d("Silver"))
+    colors.GetColor3d("Silver"))
 
     # Visualize
     renderer = vtk.vtkRenderer()
@@ -81,6 +87,21 @@ def GetPath(foldername="sample"):
     name=os.path.dirname(os.path.abspath(__file__))
     path=os.path.normpath(os.path.join(name,"../",foldername))
     return path
+
+def DelVtkArray(vtk_obj,arr_names):
+    for name in arr_names:
+        vtk_obj.GetCellData().RemoveArray(name)
+
+def WriteVtkFile(name,vtk_obj):
+    # Here we write out the cube.
+    writer = vtk.vtkXMLUnstructuredGridWriter()
+    if vtk.VTK_MAJOR_VERSION <= 5:
+        writer.SetInput(vtk_obj)
+    else:
+        writer.SetInputData(vtk_obj)
+    writer.SetFileName(name+".vtu")
+    writer.SetDataModeToAscii()
+    writer.Update()
 
 if __name__ == '__main__':
     main()

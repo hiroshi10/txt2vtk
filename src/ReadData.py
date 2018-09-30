@@ -33,6 +33,7 @@ class Surface:
 
 class Mesh:
     def __init__(self,path):
+        self.path=path
         with open(os.path.join(path,"SURFACE.INDAT"),"r") as f:
             f.readline()    #empty line
             self.num_of_node,self.num_of_face=[int(item) for item in f.readline().split()[:2]]
@@ -64,21 +65,48 @@ class Mesh:
     #def Defrom(self):
     #def InputVTK(self):
 
-    class Stress:
-        def __init__(self,fullpath,nelm,types):
-            self.path=fullpath
-            self.num_of_elem=nelm
-            sgm_dict={"min":1,"max":2,"x":3,"y":4,"z":5}
-            self.type=[sgm_dict[key.lower()] for key in types]
+    def GetSgmData(self,types):
+        self.sgm_types=types
+        self.sgm_paths=self.GetSgmPaths()
+        
+        if not self.sgm_paths:
+            print("There is no PrincipalSgm4Paraview... .txt!! Path:{}".format(self.path))
+            return
 
-        def GetStress(self):
-            num_lines=sum(1 for line in open(self.path))-1
-            if num_lines != self.num_of_elem:
-                print("InputError: Check the consistent between Element.INDAT & {}".format(self.path))
-                return
+        self.sgm_steps=[]
+        for path in self.sgm_paths:
+            s=Stress(path,self.num_of_elem,types)
+            self.sgm_steps.append(s.sgms)
+        del s
 
-            self.sgms=np.loadtxt(self.path,delimiter="\t",skiprows=1,usecols=self.type)
+    def GetSgmPaths(self):
+        p_list=glob.glob(os.path.join(self.path,"PrincipalSgm4Paraview*.txt"))
 
+        print("Num of Paths:{}".format(len(p_list)))
+        print( [os.path.basename(n) for n in p_list] )
+        return p_list
+
+class Stress:
+    def __init__(self,path,nelm,types):
+        self.path=path
+        self.num_of_elem=nelm
+        self.types=types
+        self.GetSgm()
+
+    sgm_dict={"min":1,"max":2,"x":3,"y":4,"z":5}    #0行目は要素番号なので1スタートで
+
+    def GetSgm(self):
+        num_lines=sum(1 for line in open(self.path))-1
+        if num_lines != self.num_of_elem:
+            raise ValueError("InputError: Check the consistent between Element.INDAT & {}".format(self.path))
+
+        self.sgms=np.loadtxt(self.path,delimiter="\t",skiprows=1,usecols=[self.sgm_dict[key.lower()] for key in self.types])
+    
+    def GetSgmPaths(self):
+        self.sgm_paths=glob.glob(os.path.join(self.path,"PrincipalSgm4Paraview"))
+        
+        print("Num of Paths:{}".format(len(self.sgm_paths)))
+        print( [os.path.basename(n) for n in self.sgm_paths] )
 
 def main():
     name=os.path.dirname(os.path.abspath(__file__))
