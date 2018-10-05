@@ -18,16 +18,21 @@ def main():
     points = vtk.vtkPoints()
 
     for i in range(mesh.num_of_node):
-        points.InsertNextPoint(mesh.node.cod[i]) #codは0startにしているので0-num_of_node-1でOK
+        points.InsertNextPoint(mesh.face.node.cod[i]) #codは0startにしているので0-num_of_node-1でOK
 
     ugrid = vtk.vtkUnstructuredGrid()
     ugrid.SetPoints(points)
 
     for i in range(mesh.num_of_elem):
         #todo: nodeID, ifaceをそもそも-1しておいていいかも(ReadData.pyで)
-        faces=[ [nodeID-1 for nodeID in mesh.face.nodeID[iface-1]] for iface in mesh.elem.faceID[i] ] #nodeID,ifaceは1start(fortranのまま)なので修正
+        faces=[]
+        for iface in mesh.elem.faceID[i]:
+            if iface not in mesh.face.zero_face:
+                faces.append( mesh.face.nodeID[iface] )
+        # faces=[ [nodeID for nodeID in mesh.face.nodeID[iface]] for iface in mesh.elem.faceID[i] ] #nodeID,ifaceは1start(fortranのまま)なので修正
+        # faces=[mesh.face.nodeID[iface] if iface not in mesh.face.zero_face for iface in mesh.elem.faceID[i]]
         faceId = vtk.vtkIdList()
-        faceId.InsertNextId(len(mesh.elem.faceID[i]))
+        faceId.InsertNextId(len(faces)) #
         
         for face in faces:
             faceId.InsertNextId(len(face))  # The number of points in the face.
@@ -85,8 +90,10 @@ def main():
 
 def GetPath(foldername="sample"):
     name=os.path.dirname(os.path.abspath(__file__))
-    path=os.path.normpath(os.path.join(name,"../",foldername))
-    return path
+    if foldername=="sample":
+        return os.path.normpath(os.path.join(name,"../",foldername))
+    else:
+        return os.path.normpath(os.path.join(name,"elements/",foldername))
 
 def DelVtkArray(vtk_obj,arr_names):
     for name in arr_names:
