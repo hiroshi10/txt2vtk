@@ -7,9 +7,10 @@ import os, sys
 from ReadData import Mesh
 import numpy as np
 import glob
+import tkinter, tkinter.filedialog, tkinter.messagebox
 
 def main():
-    foldername="sample"
+    foldername="fai4x6"
     mesh=Mesh(GetPath(foldername))
 
     colors = vtk.vtkNamedColors()
@@ -109,6 +110,15 @@ def WriteVtkFile(name,vtk_obj):
     writer.SetFileName(name+".vtu")
     writer.SetDataModeToAscii()
     writer.Update()
+
+def SelectFolderGUI():
+    root = tkinter.Tk()
+    root.withdraw()
+    fTyp = [("","*")]
+    iDir = os.path.abspath(os.path.dirname(__file__))
+    tkinter.messagebox.showinfo('txt2vtk','Select input folder！')
+    folder_path = tkinter.filedialog.askopenfilename(filetypes = fTyp,initialdir = iDir)
+    return folder_path
 
 if __name__ == '__main__':
     main()
