@@ -136,6 +136,24 @@ class Stress:
         print("Num of Paths:{}".format(len(self.sgm_paths)))
         print( [os.path.basename(n) for n in self.sgm_paths] )
 
+def FaceArea(a):
+    a=np.array(a)
+    if a.shape[1] != 3:
+        raise ValueError("Input value must have 3 elements")
+    return TriArea(a[1:]-a[0])  #a[0]を原点として、各頂点を結ぶベクトルを作成->外積から各三角形の面積を算出
+
+def TriArea(a):
+    return 0.5*np.sum(np.linalg.norm(np.cross(a[:-1],RollArr(a)[:-1])))
+
+def RollArr(a,roll=1): #np.rollでやれるかも
+    if a.shape[0]<=roll:
+        raise ValueError("Roll must be smaller than array row number")
+
+    b=np.zeros_like(a)
+    b[:-roll]=a[roll:]
+    b[-roll:]=a[:roll]
+    return b
+
 def main():
     name=os.path.dirname(os.path.abspath(__file__))
     path=os.path.normpath(os.path.join(name,"../sample"))
