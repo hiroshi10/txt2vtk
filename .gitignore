@@ -112,5 +112,7 @@ venv.bak/
 *.VIEW
 
 #vtk files
-/src/elements/*/*.vtu
+*.vtu
 !/sample/*.vtu
+*.pvd
+*.vtp
