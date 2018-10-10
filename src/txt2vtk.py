@@ -9,8 +9,7 @@ import numpy as np
 import glob
 import tkinter, tkinter.filedialog, tkinter.messagebox
 
-def main():
-    foldername="fai4x6"
+def main(sgm_type,foldername,debug=False,find_face=[]):
     mesh=Mesh(GetPath(foldername))
 
     colors = vtk.vtkNamedColors()
@@ -27,11 +26,7 @@ def main():
     for i in range(mesh.num_of_elem):
         #todo: nodeID, ifaceをそもそも-1しておいていいかも(ReadData.pyで)
         faces=[]
-        for iface in mesh.elem.faceID[i]:
-            if iface not in mesh.face.zero_face:
-                faces.append( mesh.face.nodeID[iface] )
-        # faces=[ [nodeID for nodeID in mesh.face.nodeID[iface]] for iface in mesh.elem.faceID[i] ] #nodeID,ifaceは1start(fortranのまま)なので修正
-        # faces=[mesh.face.nodeID[iface] if iface not in mesh.face.zero_face for iface in mesh.elem.faceID[i]]
+        faces=[mesh.face.nodeID[iface] for iface in mesh.elem.faceID[i] if iface not in mesh.face.zero_face]
         faceId = vtk.vtkIdList()
         faceId.InsertNextId(len(faces)) #
         
@@ -42,7 +37,6 @@ def main():
         ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
     
     #CellDataの入力
-    sgm_type=("min","max","Y")  #出力したい応力を入力する
     mesh.GetSgmData(sgm_type)
 
     #MatIDの入力
@@ -50,7 +44,7 @@ def main():
     matID.SetName("matID")
     ugrid.GetCellData().AddArray(matID)
 
-    if mesh.sgm_paths:  #pathがあるとき(空のリストでないとき)
+    if mesh.sgm_paths and debug==False:  #pathがあるとき(空のリストでないとき)
         for idx,sgm in enumerate(mesh.sgm_steps):
             for s_type in range(sgm.shape[1]): #列(SgmType)の分だけloop回す
                 scalar=nps.numpy_to_vtk(num_array=sgm[:,s_type],deep=True,array_type=vtk.VTK_FLOAT)
@@ -121,4 +115,7 @@ def SelectFolderGUI():
     return folder_path
 
 if __name__ == '__main__':
-    main()
+    foldername="fai5x10-ird-coarse"
+    sgm_type=("min","max","Y")  #出力したい応力を入力する
+    findface=[]
+    main(sgm_type,foldername,debug=True)
