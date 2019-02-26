@@ -10,8 +10,7 @@ import glob
 import tkinter, tkinter.filedialog, tkinter.messagebox
 
 def main():
-    foldername="fai4x6"
-    mesh=Mesh(GetPath(foldername))
+    mesh=Mesh(GetPath())
 
     colors = vtk.vtkNamedColors()
 
@@ -89,12 +88,13 @@ def main():
     renderWindow.Render()
     renderWindowInteractor.Start()
 
-def GetPath(foldername="sample"):
-    name=os.path.dirname(os.path.abspath(__file__))
+def GetPath(foldername="GUI"):
     if foldername=="sample":
+        name=os.path.dirname(os.path.abspath(__file__))
         return os.path.normpath(os.path.join(name,"../",foldername))
     else:
-        return os.path.normpath(os.path.join(name,"elements/",foldername))
+        #return os.path.normpath(os.path.join(name,"elements/",foldername))
+        return SelectFolderGUI()
 
 def DelVtkArray(vtk_obj,arr_names):
     for name in arr_names:
@@ -114,10 +114,11 @@ def WriteVtkFile(name,vtk_obj):
 def SelectFolderGUI():
     root = tkinter.Tk()
     root.withdraw()
-    fTyp = [("","*")]
+    #fTyp = [("","*")]
     iDir = os.path.abspath(os.path.dirname(__file__))
-    tkinter.messagebox.showinfo('txt2vtk','Select input folder！')
-    folder_path = tkinter.filedialog.askopenfilename(filetypes = fTyp,initialdir = iDir)
+    tkinter.messagebox.showinfo('txt2vtk','Choose an input directory')
+    titletext="Choose directory"
+    folder_path = tkinter.filedialog.askdirectory(title = titletext,initialdir = iDir)
     return folder_path
 
 if __name__ == '__main__':
