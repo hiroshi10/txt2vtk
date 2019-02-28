@@ -9,7 +9,7 @@ import numpy as np
 import glob
 import tkinter, tkinter.filedialog, tkinter.messagebox
 
-def main(sgm_type,foldername,debug=False,find_face=[]):
+def main(sgm_type,debug=False,find_face=[]):
     mesh=Mesh(GetPath())
 
     colors = vtk.vtkNamedColors()
@@ -116,7 +116,6 @@ def SelectFolderGUI():
     return folder_path
 
 if __name__ == '__main__':
-    foldername=""
     sgm_type=("min","max","Y")  #出力したい応力を入力する
     findface=[]
     main(sgm_type,foldername,debug=False)
