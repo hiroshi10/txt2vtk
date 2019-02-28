@@ -53,7 +53,7 @@ def main(sgm_type,foldername,debug=False,find_face=[]):
             WriteVtkFile(os.path.basename(mesh.sgm_paths[idx]).split(".")[0],ugrid)
             DelVtkArray(ugrid,sgm_type)
     else:
-        WriteVtkFile(foldername,ugrid)
+        WriteVtkFile(os.path.basename(mesh.path),ugrid)
 
     # Create a mapper and actor
     mapper = vtk.vtkDataSetMapper()
@@ -88,7 +88,6 @@ def GetPath(foldername="GUI"):
         name=os.path.dirname(os.path.abspath(__file__))
         return os.path.normpath(os.path.join(name,"../",foldername))
     else:
-        #return os.path.normpath(os.path.join(name,"elements/",foldername))
         return SelectFolderGUI()
 
 def DelVtkArray(vtk_obj,arr_names):
@@ -120,4 +119,4 @@ if __name__ == '__main__':
     foldername=""
     sgm_type=("min","max","Y")  #出力したい応力を入力する
     findface=[]
-    main(sgm_type,foldername,debug=True)
+    main(sgm_type,foldername,debug=False)
