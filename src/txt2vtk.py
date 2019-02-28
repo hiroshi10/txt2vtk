@@ -10,11 +10,7 @@ import glob
 import tkinter, tkinter.filedialog, tkinter.messagebox
 
 def main(sgm_type,foldername,debug=False,find_face=[]):
-<<<<<<< HEAD
     mesh=Mesh(GetPath())
-=======
-    mesh=Mesh(GetPath(foldername))
->>>>>>> 4093ae73676aabedb6c8f25de619be258e8811f1
 
     colors = vtk.vtkNamedColors()
 
