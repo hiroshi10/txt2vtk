@@ -7,10 +7,10 @@ import os, sys
 from ReadData import Mesh
 import numpy as np
 import glob
+import tkinter, tkinter.filedialog, tkinter.messagebox
 
-def main():
-    foldername="sample"
-    mesh=Mesh(GetPath(foldername))
+def main(sgm_type,debug=False,find_face=[]):
+    mesh=Mesh(GetPath())
 
     colors = vtk.vtkNamedColors()
 
@@ -18,16 +18,17 @@ def main():
     points = vtk.vtkPoints()
 
     for i in range(mesh.num_of_node):
-        points.InsertNextPoint(mesh.node.cod[i]) #codは0startにしているので0-num_of_node-1でOK
+        points.InsertNextPoint(mesh.face.node.cod[i]) #codは0startにしているので0-num_of_node-1でOK
 
     ugrid = vtk.vtkUnstructuredGrid()
     ugrid.SetPoints(points)
 
     for i in range(mesh.num_of_elem):
         #todo: nodeID, ifaceをそもそも-1しておいていいかも(ReadData.pyで)
-        faces=[ [nodeID-1 for nodeID in mesh.face.nodeID[iface-1]] for iface in mesh.elem.faceID[i] ] #nodeID,ifaceは1start(fortranのまま)なので修正
+        faces=[]
+        faces=[mesh.face.nodeID[iface] for iface in mesh.elem.faceID[i] if iface not in mesh.face.zero_face]
         faceId = vtk.vtkIdList()
-        faceId.InsertNextId(len(mesh.elem.faceID[i]))
+        faceId.InsertNextId(len(faces)) #
         
         for face in faces:
             faceId.InsertNextId(len(face))  # The number of points in the face.
@@ -36,7 +37,6 @@ def main():
         ugrid.InsertNextCell(vtk.VTK_POLYHEDRON, faceId)
     
     #CellDataの入力
-    sgm_type=("min","max","Y")  #出力したい応力を入力する
     mesh.GetSgmData(sgm_type)
 
     #MatIDの入力
@@ -44,7 +44,7 @@ def main():
     matID.SetName("matID")
     ugrid.GetCellData().AddArray(matID)
 
-    if mesh.sgm_paths:  #pathがあるとき(空のリストでないとき)
+    if mesh.sgm_paths and debug==False:  #pathがあるとき(空のリストでないとき)
         for idx,sgm in enumerate(mesh.sgm_steps):
             for s_type in range(sgm.shape[1]): #列(SgmType)の分だけloop回す
                 scalar=nps.numpy_to_vtk(num_array=sgm[:,s_type],deep=True,array_type=vtk.VTK_FLOAT)
@@ -53,7 +53,7 @@ def main():
             WriteVtkFile(os.path.basename(mesh.sgm_paths[idx]).split(".")[0],ugrid)
             DelVtkArray(ugrid,sgm_type)
     else:
-        WriteVtkFile(foldername,ugrid)
+        WriteVtkFile(os.path.basename(mesh.path),ugrid)
 
     # Create a mapper and actor
     mapper = vtk.vtkDataSetMapper()
@@ -83,10 +83,12 @@ def main():
     renderWindow.Render()
     renderWindowInteractor.Start()
 
-def GetPath(foldername="sample"):
-    name=os.path.dirname(os.path.abspath(__file__))
-    path=os.path.normpath(os.path.join(name,"../",foldername))
-    return path
+def GetPath(foldername="GUI"):
+    if foldername=="sample":
+        name=os.path.dirname(os.path.abspath(__file__))
+        return os.path.normpath(os.path.join(name,"../",foldername))
+    else:
+        return SelectFolderGUI()
 
 def DelVtkArray(vtk_obj,arr_names):
     for name in arr_names:
@@ -103,5 +105,17 @@ def WriteVtkFile(name,vtk_obj):
     writer.SetDataModeToAscii()
     writer.Update()
 
+def SelectFolderGUI():
+    root = tkinter.Tk()
+    root.withdraw()
+    #fTyp = [("","*")]
+    iDir = os.path.abspath(os.path.dirname(__file__))
+    tkinter.messagebox.showinfo('txt2vtk','Choose an input directory')
+    titletext="Choose directory"
+    folder_path = tkinter.filedialog.askdirectory(title = titletext,initialdir = iDir)
+    return folder_path
+
 if __name__ == '__main__':
-    main()
+    sgm_type=("min","max","Y")  #出力したい応力を入力する
+    findface=[]
+    main(sgm_type)

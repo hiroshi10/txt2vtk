@@ -7,60 +7,87 @@ import os,sys
 import glob
 
 class Elem:
-    def __init__(self,num_of_elem):
+    def __init__(self,path):
         self.matID=[]
         self.faceID=[]
+
+        with open(os.path.join(path,"ELEMENT.INDAT"),"r") as f:
+            f.readline()    #empty line
+            self.num_of_elem=int(f.readline().split()[0])
+
+            for _ in range(self.num_of_elem):
+                line=f.readline().split()
+                faceID=[int(item)-1 for item in line[6:]] #ここから面積0のものを除く
+                self.InsertElem(int(line[1]),faceID)    #matID: int(line[1])
+
     def InsertElem(self,matID,faceIDs):
         self.matID.append(matID)
         self.faceID.append(faceIDs)
 
 class Node:
-    def __init__(self,num_of_node):
-        self.num_of_node=num_of_node
-        self.cod=np.zeros((self.num_of_node,3))
-    
+    def __init__(self,path):
+        with open(os.path.join(path,"SURFACE.INDAT"),"r") as f:
+            f.readline()    #empty line
+            # self.num_of_node, _=[int(item) for item in f.readline().split()[:2]]
+            self.num_of_node = int(f.readline().split()[0])
+
+            self.cod=np.zeros((self.num_of_node,3))
+            
+            for _ in range(self.num_of_node):   #"_": 使わない数字
+                line=f.readline().split()   #.split(): 空白かタブで文字を区切る
+                cod=[float(item) for item in line[1:]]
+                self.InsertNode(int(line[0]),cod) #node id: int(line[0])
+
     def InsertNode(self,nodeID,cod):
         self.cod[nodeID-1]=np.array(cod) #nodeID-1: 他のリストと合わせるため
 
 class Surface:
-    def __init__(self,num_of_face):
+    def __init__(self,path):
         self.nodeID=[]
         self.FaceType=[]
+        self.zero_face=[]
+
+        self.node=Node(path)
+
+        with open(os.path.join(path,"SURFACE.INDAT"),"r") as f:
+            f.readline()    #empty line
+            # nnode, self.num_of_face=[int(item) for item in f.readline().split()[:2]]
+            self.num_of_face=int(f.readline().split()[1])
+            
+            for _ in range(self.node.num_of_node+1):   #"_": 使わない数字
+                f.readline()
+            
+            for _ in range(self.num_of_face):
+                line=f.readline().split()
+                ids=[int(item)-1 for item in line[5:]]    #line[5:]: face ids
+                self.InsertFace(int(line[3]),ids)   #int(line[3]): facetype 
 
     def InsertFace(self,typeID,NodesList):
         self.FaceType.append(typeID)
         self.nodeID.append(NodesList)
 
+    def FindZeroAreaFace(self):
+        for i in range(self.num_of_face):
+            if len(self.nodeID[i]) < 3:
+                self.zero_face.append(i)
+            elif FaceArea( np.array([self.node.cod[idx] for idx in self.nodeID[i]]) )  < 1.e-8:
+                self.zero_face.append(i)
+                
+        print(self.zero_face)
+
 class Mesh:
-    def __init__(self,path):
+    def __init__(self,path,rm_zero=False):
         self.path=path
-        with open(os.path.join(path,"SURFACE.INDAT"),"r") as f:
-            f.readline()    #empty line
-            self.num_of_node,self.num_of_face=[int(item) for item in f.readline().split()[:2]]
-            
-            self.node=Node(self.num_of_node)
-            for _ in range(self.num_of_node):   #"_": 使わない数字
-                line=f.readline().split()
-                cod=[float(item) for item in line[1:]]
-                self.node.InsertNode(int(line[0]),cod) #id: int(line[0])
 
-            f.readline()    #empty line
-            
-            self.face=Surface(self.num_of_face)
-            for _ in range(self.num_of_face):
-                line=f.readline().split()
-                ids=[int(item) for item in line[5:]]
-                self.face.InsertFace(int(line[3]),ids)   #facetype: int(line[3])
+        self.elem=Elem(self.path)
+        self.num_of_elem=self.elem.num_of_elem
         
-        with open(os.path.join(path,"ELEMENT.INDAT"),"r") as f:
-            f.readline()    #empty line
-            self.num_of_elem=int(f.readline().split()[0])
-
-            self.elem=Elem(self.num_of_elem)
-            for _ in range(self.num_of_elem):
-                line=f.readline().split()
-                faceID=[int(item) for item in line[6:]]
-                self.elem.InsertElem(int(line[1]),faceID)    #matID: int(line[1])
+        self.face=Surface(self.path)
+        self.num_of_face=self.face.num_of_face
+        self.num_of_node=self.face.node.num_of_node
+        
+        if rm_zero:
+            self.face.FindZeroAreaFace()
 
     #def Defrom(self):
     #def InputVTK(self):
@@ -70,7 +97,7 @@ class Mesh:
         self.sgm_paths=self.GetSgmPaths()
         
         if not self.sgm_paths:
-            print("There is no PrincipalSgm4Paraview... .txt!! Path:{}".format(self.path))
+            print("[WARNING] There is no PrincipalSgm4Paraview... .txt!!  Path:{}".format(self.path))
             return
 
         self.sgm_steps=[]
@@ -82,8 +109,9 @@ class Mesh:
     def GetSgmPaths(self):
         p_list=glob.glob(os.path.join(self.path,"PrincipalSgm4Paraview*.txt"))
 
-        print("Num of Paths:{}".format(len(p_list)))
-        print( [os.path.basename(n) for n in p_list] )
+        if p_list:  #リストに値がある時出力
+            print("Num of Paths:{}".format(len(p_list)))
+            print( [os.path.basename(n) for n in p_list] )
         return p_list
 
 class Stress:
@@ -107,6 +135,24 @@ class Stress:
         
         print("Num of Paths:{}".format(len(self.sgm_paths)))
         print( [os.path.basename(n) for n in self.sgm_paths] )
+
+def FaceArea(a):
+    a=np.array(a)
+    if a.shape[1] != 3:
+        raise ValueError("Input value must have 3 elements")
+    return TriArea(a[1:]-a[0])  #a[0]を原点として、各頂点を結ぶベクトルを作成->外積から各三角形の面積を算出
+
+def TriArea(a):
+    return 0.5*np.sum(np.linalg.norm(np.cross(a[:-1],RollArr(a)[:-1])))
+
+def RollArr(a,roll=1): #np.rollでやれるかも
+    if a.shape[0]<=roll:
+        raise ValueError("Roll must be smaller than array row number")
+
+    b=np.zeros_like(a)
+    b[:-roll]=a[roll:]
+    b[-roll:]=a[:roll]
+    return b
 
 def main():
     name=os.path.dirname(os.path.abspath(__file__))

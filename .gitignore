@@ -102,3 +102,17 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# RBSM files
+/src/elements/*/*.*DAT
+/src/elements/*/*/*.*DAT
+!/sample/*.*DAT
+/src/elements/*/*.txt
+!/sample/*.txt
+*.VIEW
+
+#vtk files
+*.vtu
+!/sample/*.vtu
+*.pvd
+*.vtp
