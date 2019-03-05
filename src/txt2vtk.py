@@ -118,4 +118,4 @@ def SelectFolderGUI():
 if __name__ == '__main__':
     sgm_type=("min","max","Y")  #出力したい応力を入力する
     findface=[]
-    main(sgm_type,foldername,debug=False)
+    main(sgm_type)
